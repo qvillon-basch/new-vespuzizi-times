@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>The New Vespuzizi Times — le brouillon du soir</title>
+<!-- Page de service générique : aucun contenu du jour ici. Le contenu voyage dans le fragment
+     du lien (#…, jamais transmis au serveur) : JSON UTF-8 → DEFLATE brut → base64url sans « = ».
+     Aucune action de publication : « Éditer » et « Nouveau jet » sont des boutons de la notification.
+     Polices : NVT Gothique (Pirata One) et NVT Serif (STIX General), SIL Open Font License 1.1. -->
+<style>
+@font-face{font-family:'NVT Gothique';src:url('assets/fonts/nvt-gothique.woff') format('woff');font-display:swap}
+@font-face{font-family:'NVT Serif';src:url('assets/fonts/nvt-serif-400.woff') format('woff');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'NVT Serif';src:url('assets/fonts/nvt-serif-400i.woff') format('woff');font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:'NVT Serif';src:url('assets/fonts/nvt-serif-700.woff') format('woff');font-weight:700;font-style:normal;font-display:swap}
+:root{--parch:#E6D2A8;--ink:#2B1D10;--blood:#7B1F14;--sepia:#7E5F3A}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{min-height:100vh;background:radial-gradient(ellipse at 50% 30%,#5a3d22 0%,#3a2716 60%,#24170c 100%);
+  font:18px/1.45 'NVT Serif',Georgia,'Times New Roman',serif;color:var(--ink);padding:14px 10px 40px}
+.sheet{max-width:620px;margin:0 auto;padding:18px 18px 24px;border-radius:4px;
+  background:radial-gradient(ellipse at 20% 10%,rgba(255,245,215,.55),transparent 55%),var(--parch);
+  box-shadow:inset 0 0 30px rgba(90,50,15,.45),0 6px 24px rgba(0,0,0,.5)}
+.mast{font-family:'NVT Gothique',Georgia,serif;text-align:center;line-height:1.02;font-size:30px}
+.mast b{display:block;font-weight:400;font-size:44px}
+hr{border:0;border-top:3px solid var(--ink);margin:10px 0 2px} hr+hr{border-top-width:1px;margin:0 0 8px}
+h1{font-family:'NVT Gothique',Georgia,serif;font-weight:400;font-size:30px;line-height:1.1;margin:10px 0 2px}
+.when{font-style:italic;color:var(--sepia);margin-bottom:12px}
+h2{font-family:'NVT Gothique',Georgia,serif;font-weight:400;font-size:24px;margin:20px 0 6px;border-bottom:1.5px solid rgba(43,29,16,.35)}
+.headline{font-family:'NVT Gothique',Georgia,serif;font-size:26px;line-height:1.15;color:var(--blood);margin:6px 0 8px}
+#draft p{margin:0 0 10px;text-align:left;overflow-wrap:anywhere}
+#draft p.head{font-weight:700;margin-top:16px}
+.note{font-style:italic;color:#4a3420}
+#prompt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:17px;background:#fbf6ea;border:1px solid rgba(43,29,16,.45);
+  border-radius:4px;padding:12px;-webkit-user-select:text;user-select:text}
+button{display:block;width:100%;margin-top:12px;min-height:50px;font:inherit;font-size:20px;font-weight:700;
+  background:var(--blood);color:#f6e7c8;border:0;border-radius:8px;cursor:pointer}
+.msg{margin-top:12px;padding:12px 14px;border-radius:6px;font-size:17px}
+.msg.ok{background:rgba(46,107,102,.15);border:1px solid #2E6B66}
+.msg.err{background:rgba(123,31,20,.12);border:1px solid var(--blood)}
+.msg b{display:block}
+.next{margin-top:20px;font-size:16px;font-style:italic;color:var(--sepia)}
+[hidden]{display:none!important}
+</style></head>
+<body><main class="sheet">
+<div class="mast">The New<b>Vespuzizi Times</b></div><hr><hr>
+<h1>Le brouillon du soir</h1>
+<div class="when" id="when"></div>
+<div id="msg" class="msg" role="status" aria-live="polite" hidden></div>
+<section id="content" hidden>
+<h2>Le texte</h2>
+<div id="headline" class="headline" hidden></div>
+<div id="draft"></div>
+<h2>Le dessin du jour</h2>
+<p class="note">Prompt à coller dans ChatGPT, puis dépose le dessin sur le PC.</p>
+<div id="prompt"></div>
+<button id="copy" type="button">Copier le prompt</button>
+<div id="copied" class="msg" role="status" aria-live="polite" hidden></div>
+<p class="next">Pour publier&nbsp;: touche «&nbsp;Éditer&nbsp;» dans la notification&nbsp;; pour une autre version&nbsp;: «&nbsp;Nouveau jet&nbsp;».</p>
+</section>
+</main>
+<script>
+(function () {
+  'use strict';
+  var JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  var $ = function (id) { return document.getElementById(id); };
+  var promptText = '';
+
+  function message(el, kind, title, text) {
+    el.className = 'msg ' + kind;
+    el.textContent = '';
+    var b = document.createElement('b'); b.textContent = title; el.appendChild(b);
+    if (text) { var s = document.createElement('span'); s.textContent = text; el.appendChild(s); }
+    el.hidden = false;
+  }
+  function dateFr(iso) {
+    var p = iso.split('-').map(Number), d = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
+    return JOURS[d.getUTCDay()] + ' ' + p[2] + ' ' + MOIS[p[1] - 1] + ' ' + p[0];
+  }
+  function decode(frag) { // base64url → DEFLATE brut → JSON UTF-8
+    var s = frag.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    var bin = atob(s), u8 = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    var stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Response(stream).text().then(JSON.parse);
+  }
+  function render(d) {
+    $('when').textContent = 'Numéro du ' + dateFr(d.edition);
+    if (typeof d.headline === 'string' && d.headline) { $('headline').textContent = d.headline; $('headline').hidden = false; }
+    var box = $('draft');
+    if (typeof d.draft === 'string' && d.draft.trim()) {
+      d.draft.split(/\n\s*\n/).forEach(function (block) {
+        block.split('\n').forEach(function (line, i) {
+          if (!line.trim()) return;
+          var p = document.createElement('p');
+          if (i === 0 && line.length < 70 && line === line.toUpperCase() && /[A-ZÀ-Ý]/.test(line)) p.className = 'head';
+          p.textContent = line; box.appendChild(p);
+        });
+      });
+    } else {
+      var n = document.createElement('p'); n.className = 'note';
+      n.textContent = 'Le texte complet du brouillon est dans les notifications ntfy.';
+      box.appendChild(n);
+    }
+    promptText = d.image_prompt || d.prompt || '';
+    $('prompt').textContent = promptText;
+    $('content').hidden = false;
+  }
+  function selectPrompt() {
+    var r = document.createRange(); r.selectNodeContents($('prompt'));
+    var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  }
+  function fallback() { // repli : texte sélectionné, copie par l'ancienne commande si elle existe
+    selectPrompt();
+    var ok = false;
+    try { ok = document.execCommand && document.execCommand('copy'); } catch (e) { ok = false; }
+    if (ok) message($('copied'), 'ok', 'Prompt copié.', '');
+    else message($('copied'), 'err', 'Copie automatique impossible.', 'Le prompt est sélectionné : touche « Copier » dans le menu.');
+  }
+  $('copy').addEventListener('click', function () {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(promptText).then(function () {
+          message($('copied'), 'ok', 'Prompt copié.', 'Colle-le dans ChatGPT.');
+        }, fallback);
+        return;
+      }
+    } catch (e) { /* repli ci-dessous */ }
+    fallback();
+  });
+  var bad = function () { message($('msg'), 'err', 'Lien abîmé ou incomplet : brouillon illisible.', 'Rouvre la notification du brouillon ; le texte est aussi sur le PC.'); window.__brouillon = { ready: false }; };
+  var frag = location.hash.replace(/^#/, '');
+  if (!frag) { message($('msg'), 'err', 'Lien incomplet : aucun brouillon dans ce lien.', 'Rouvre la notification du brouillon ; le texte est aussi sur le PC.'); return; }
+  var canInflate = function () { // DecompressionStream('deflate-raw') absent ou refusé : navigateur trop ancien
+    try { new DecompressionStream('deflate-raw'); return true; } catch (e) { return false; }
+  };
+  if (!canInflate()) { message($('msg'), 'err', 'Navigateur trop ancien pour lire ce lien.', 'Plan B : le texte et le prompt sont sur le PC (brouillon.txt, prompt-image.md) et dans les notifications.'); window.__brouillon = { ready: false }; return; }
+  try {
+    decode(frag).then(function (d) {
+      if (!d || d.v !== 1 || typeof d.edition !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d.edition)) throw new Error('format');
+      if (typeof (d.image_prompt || d.prompt) !== 'string') throw new Error('prompt');
+      render(d); window.__brouillon = { ready: true };
+    }).catch(bad);
+  } catch (e) { bad(); }
+})();
+</script>
+</body></html>
