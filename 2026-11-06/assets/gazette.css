@@ -1,0 +1,177 @@
+/* The New Vespuzizi Times — édition web. Unité : 1rem = largeur de page / 36
+   (10 px pour la page de référence 360 × 700) : tout se met à l'échelle avec la page.
+   Texte courant : une seule taille par numéro, --tx = 1,7 rem × --fz (Une comprise).
+   Polices : NVT Gothique (Pirata One, OFL) pour le nom du journal et les titres,
+   NVT Serif (STIX General, OFL) pour le texte ; sous-ensembles renommés, voir fonts/. */
+@font-face{font-family:'NVT Gothique';src:url('fonts/nvt-gothique.woff') format('woff');font-weight:400;font-style:normal;font-display:block}
+@font-face{font-family:'NVT Serif';src:url('fonts/nvt-serif-400.woff') format('woff');font-weight:400;font-style:normal;font-display:block}
+@font-face{font-family:'NVT Serif';src:url('fonts/nvt-serif-400i.woff') format('woff');font-weight:400;font-style:italic;font-display:block}
+@font-face{font-family:'NVT Serif';src:url('fonts/nvt-serif-700.woff') format('woff');font-weight:700;font-style:normal;font-display:block}
+@font-face{font-family:'NVT Serif';src:url('fonts/nvt-serif-700i.woff') format('woff');font-weight:700;font-style:italic;font-display:block}
+:root{--parch:#E6D2A8;--ink:#2B1D10;--blood:#7B1F14;--sepia:#7E5F3A;--fz:1}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:10px;-webkit-text-size-adjust:none;text-size-adjust:none;height:100%}
+body{height:100%;overflow:hidden;overscroll-behavior:none;
+  background:radial-gradient(ellipse at 50% 40%,#5a3d22 0%,#3a2716 55%,#24170c 100%);
+  font-family:'NVT Serif',Georgia,'Times New Roman',serif;font-variant-numeric:lining-nums;color:var(--ink);
+  -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+#stage{position:fixed;inset:0;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);display:flex;flex-direction:column;align-items:center;justify-content:center}
+#book{position:relative}
+#bar{flex:none;height:40px;width:100%;max-width:520px;display:flex;align-items:center;justify-content:center;gap:18px;
+  color:#e6d2a8;font:italic 15px/1 'NVT Serif',Georgia,serif}
+#bar button{background:none;border:1px solid rgba(230,210,168,.45);color:#e6d2a8;border-radius:16px;height:30px;min-width:40px;
+  padding:0 10px;font:inherit;font-style:normal;font-size:17px;cursor:pointer}
+#bar button:active{background:rgba(230,210,168,.15)}
+#bar button[disabled]{opacity:.3}
+#pg{min-width:58px;text-align:center}
+#snd{position:relative}
+#snd.off::after{content:"";position:absolute;left:9px;right:9px;top:50%;border-top:1.5px solid #e6d2a8;transform:rotate(-35deg)}
+noscript p{color:#e6d2a8;font-size:16px;padding:20px;text-align:center}
+
+/* ---- page ---- */
+.page{background:var(--parch);overflow:hidden}
+.sheet{position:absolute;inset:0;overflow:hidden;
+  background:radial-gradient(ellipse at 20% 10%,rgba(255,245,215,.55),transparent 55%),
+    radial-gradient(ellipse at 85% 80%,rgba(150,100,45,.22),transparent 50%),var(--parch);
+  box-shadow:inset 0 0 3.2rem rgba(90,50,15,.45),inset 0 0 .6rem rgba(60,30,5,.5)}
+.sheet::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.3;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .3  0 0 0 0 .12  0 0 0 .55 0'/></filter><rect width='300' height='300' filter='url(%23n)'/></svg>");background-size:150px 150px}
+.page.--left .sheet{box-shadow:inset -1.8rem 0 2.4rem -1.4rem rgba(60,30,5,.55),inset 0 0 3.2rem rgba(90,50,15,.4)}
+.page.--right .sheet{box-shadow:inset 1.8rem 0 2.4rem -1.4rem rgba(60,30,5,.55),inset 0 0 3.2rem rgba(90,50,15,.4)}
+.inner{--tx:calc(1.7rem * var(--fz));position:absolute;left:1.6rem;right:1.6rem;top:1.5rem;bottom:3.3rem;overflow:hidden}
+.folio{position:absolute;left:1.6rem;right:2.6rem;bottom:1.05rem;display:flex;justify-content:space-between;
+  font-style:italic;font-size:1.3rem;line-height:1.4rem;color:var(--sepia);border-top:1px solid rgba(43,29,16,.35);padding-top:.4rem}
+.folio b{font-style:normal;font-weight:400;color:var(--ink)}
+
+/* ---- Une ---- */
+.gothic,h2,.mast,.thenew,.banc .title{font-family:'NVT Gothique','UnifrakturMaguntia','Old English Text MT',serif;font-weight:400;font-style:normal}
+.une-top{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
+.ear{flex:none;width:7.6rem;font-style:italic;font-size:1.05rem;line-height:1.2;color:var(--sepia);text-align:center;
+  border:1px solid rgba(43,29,16,.45);padding:.25rem .3rem}
+.thenew{flex:1;text-align:center;font-size:3.4rem;line-height:1;white-space:nowrap}
+.seal{flex:none;width:4.6rem;height:4.6rem;border-radius:50%;background:radial-gradient(circle at 35% 30%,#9b3324,var(--blood) 60%,#5a140c);
+  color:#f3e2bd;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;
+  box-shadow:0 0 0 .25rem rgba(123,31,20,.25),inset 0 0 .5rem rgba(0,0,0,.4);transform:rotate(-8deg)}
+.seal b{font-size:1.1rem;font-weight:400;font-style:italic} .seal span{font-size:2rem}
+.mast{margin:.1rem 0 0;text-align:center;white-space:nowrap;overflow:hidden;font-size:6.6rem;line-height:1.08}
+.rule{border:0;border-top:.25rem solid var(--ink);margin-top:.3rem}
+.rule2{border:0;border-top:1px solid var(--ink);margin-top:.2rem}
+.date{display:flex;justify-content:space-between;font-style:italic;font-size:1.45rem;color:var(--sepia);padding:.3rem .1rem .35rem;
+  border-bottom:1px solid var(--ink);margin-bottom:.9rem}
+.une-fig{margin:0 0 .8rem}
+.une-fig .frame{background:#fbf6ea;padding:.5rem;box-shadow:0 .3rem .9rem rgba(60,30,5,.4);border:1px solid rgba(43,29,16,.25)}
+.une-fig img{display:block;width:100%;height:auto}
+.une-fig figcaption{font-variant:small-caps;font-weight:700;font-size:1.4rem;line-height:1.2;color:var(--blood);padding-top:.4rem;text-align:center}
+.une-fig+p.legend{text-indent:0}
+
+/* ---- texte ---- */
+h2{margin:1.3rem 0 .55rem;border-bottom:1.5px solid rgba(43,29,16,.35);padding-bottom:.2rem;font-size:3.1rem;line-height:1.05;color:var(--ink)}
+.inner>h2:first-child,.inner>.kicker+h2{margin-top:0}
+p{font-size:var(--tx);line-height:1.31;text-align:justify;hyphens:auto;-webkit-hyphens:auto;text-indent:1.3em}
+/* mot ou adresse insécable plus large que la colonne : coupé n'importe où plutôt que de déborder */
+p,h2,.sig,blockquote.pull,figcaption,.kicker,.banc td.nm,.banc .out,.banc .none,.mapinner .sub,.raceinner .sub,.lessees{overflow-wrap:anywhere}
+h2+p,p.cont,.kicker+p{text-indent:0}
+p.split{text-align-last:justify}
+p.lead::first-letter{float:left;font-size:4.5em;line-height:.82;padding:.06em .07em 0 0;color:var(--blood);font-weight:700}
+.kicker{font-style:italic;font-size:1.4rem;color:var(--sepia);margin-bottom:.35rem}
+.suite{font-style:italic;font-size:1.4rem;color:var(--blood);text-align:right;margin-top:.15rem}
+.fig{margin:1rem auto .9rem;width:fit-content;max-width:100%;background:#fbf6ea;padding:.55rem .55rem .35rem;
+  box-shadow:0 .3rem .8rem rgba(60,30,5,.38);border:1px solid rgba(43,29,16,.2);transform:rotate(1deg)}
+.fig img{display:block;height:var(--h);width:auto;max-width:100%;object-fit:cover}
+.fig figcaption{font-style:italic;font-size:1.4rem;color:var(--sepia);text-align:center;padding-top:.3rem}
+.sig{margin-top:.6rem;text-align:right;font-style:italic;font-size:var(--tx);line-height:1.3;color:var(--blood)}
+.orn{text-align:center;color:var(--sepia);font-size:1.6rem;letter-spacing:.6em;margin:.9rem 0 .3rem}
+
+/* ---- carte ---- */
+.mapinner,.raceinner{display:flex;flex-direction:column}
+.mapinner .sub,.raceinner .sub{font-style:italic;font-size:1.5rem;line-height:1.25;color:var(--sepia);margin:-.1rem 0 .5rem}
+.mapbox{flex:1;position:relative;min-height:0;border:1px solid rgba(43,29,16,.55);
+  background:radial-gradient(ellipse at 50% 45%,rgba(255,248,225,.45),rgba(160,120,60,.12));box-shadow:inset 0 0 1.6rem rgba(90,50,15,.25)}
+.mapbox svg{position:absolute;inset:0;width:100%;height:100%}
+.mapbar{flex:none;display:flex;align-items:center;justify-content:space-between;padding-top:.6rem;gap:.8rem}
+#clock,.clock{font-size:1.7rem;font-style:italic;color:var(--ink);font-variant-numeric:tabular-nums lining-nums}
+#clock b,.clock b{font-style:normal;color:var(--blood)}
+.replay{font:inherit;font-size:1.55rem;background:var(--ink);color:var(--parch);border:0;border-radius:.4rem;padding:.45rem 1.1rem;cursor:pointer}
+.replay *{pointer-events:none}
+.mapnote{font-style:italic;font-size:1.35rem;color:var(--sepia);margin-top:.35rem}
+.mapnote i{color:var(--blood);font-style:normal}
+/* Film de la course : meneur, bandeau de la location de la 1re place, locataires */
+.raceinner .leader{flex:none;min-height:2rem;font-size:1.5rem;font-style:italic;color:var(--sepia);text-align:center;margin-top:.4rem}
+.raceinner .leader b{font-style:normal}
+.band{flex:none;position:relative;display:flex;height:1.1rem;margin-top:.3rem;border:1px solid rgba(43,29,16,.55);overflow:hidden}
+.band i{display:block;min-width:1px;height:100%}
+.rcursor{position:absolute;top:0;bottom:0;left:0;width:.3rem;margin-left:-.15rem;background:#C9A227;box-shadow:0 0 .3rem rgba(43,29,16,.8)}
+.bandax{flex:none;display:flex;justify-content:space-between;font-size:1.2rem;font-style:italic;color:var(--sepia)}
+.lessees{flex:none;font-size:1.4rem;line-height:1.8rem;margin-top:.3rem;padding-bottom:.2rem}
+.lessees b{font-weight:700}
+svg .grat{stroke:rgba(43,29,16,.22);stroke-width:.6;fill:none}
+svg .gl{fill:rgba(43,29,16,.55);font-size:10px;font-style:italic;font-family:'NVT Serif',Georgia,serif}
+svg .land{fill:#b99a68;stroke:#7e5f3a;stroke-width:.5}
+svg .place{fill:var(--sepia);font-size:12px;font-style:italic;font-family:'NVT Serif',Georgia,serif}
+svg .trail{fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+svg .trail.me{stroke-width:3;opacity:1}
+/* Film de la course, caméra dynamique : traits à épaisseur constante à l'écran pendant le zoom ;
+   côte = bords terre / mer de chaque niveau de détail */
+svg.cam .trail,svg.cam .grat,svg.cam .coast{vector-effect:non-scaling-stroke}
+svg.cam .coast{fill:none;stroke:#7e5f3a;stroke-width:.8;stroke-linecap:square}
+svg.cam .landf{fill:#b99a68;stroke:none}
+.mapbox svg.mapov{pointer-events:none;overflow:hidden}
+svg .lbl{font-size:13px;font-family:'NVT Serif',Georgia,serif;paint-order:stroke;stroke:rgba(240,226,190,.92);stroke-width:3px;stroke-linejoin:round}
+svg .lbl.me{font-weight:700;font-size:15px;fill:var(--blood)}
+
+/* ---- banc des moussaillons ---- */
+.rankinner{display:flex;flex-direction:column}
+.banc .title{text-align:center;font-size:3.5rem;line-height:1.1;margin:.1rem 0 .2rem;color:var(--ink);white-space:nowrap}
+.banc .when{text-align:center;font-style:italic;font-size:1.35rem;color:var(--sepia);margin-bottom:.5rem}
+.banc table{width:100%;border-collapse:collapse;font-size:1.55rem;font-variant-numeric:tabular-nums lining-nums}
+.banc th{font-weight:700;font-size:1.2rem;line-height:1.05;text-align:right;padding:0 .25rem .3rem;border-bottom:2px solid var(--ink);vertical-align:bottom;white-space:nowrap}
+.banc th small{display:block;font-style:italic;font-weight:400;font-size:1.05rem;color:var(--sepia)}
+.banc tr.grp th{border-bottom:0;padding-bottom:.1rem}
+.banc tr.grp th.g24{text-align:center;font-style:italic;font-size:1.15rem;color:var(--ink);border-bottom:1px solid rgba(43,29,16,.55)}
+.banc th.nm,.banc td.nm{text-align:left}
+.banc td{padding:var(--rowpad,.42rem) .25rem;text-align:right;line-height:1.1;border-bottom:1px dotted rgba(43,29,16,.45);white-space:nowrap;vertical-align:middle}
+.banc td.r{font-weight:700;color:var(--blood);width:2.2rem;padding-left:0}
+.banc td.nm{white-space:normal;line-height:1.08}
+.banc td.nm b{display:block;font-size:1.55rem}
+.banc td.nm.long b{font-size:1.38rem}
+.banc td.g{font-size:1.45rem}
+.banc td.s24,.banc th.s24{border-left:1px solid rgba(43,29,16,.3)}
+.banc tr.me td{background:rgba(123,31,20,.12);color:var(--blood)}
+.banc sup{font-size:.6em}
+.banc .tag{display:inline-block;font-size:1.1rem;font-style:italic;background:var(--ink);color:var(--parch);padding:0 .45rem;border-radius:.3rem;margin-top:.15rem;white-space:nowrap}
+.banc .tag.low{background:none;color:var(--blood);border:1px solid var(--blood)}
+.banc .out,.banc .none{font-size:1.35rem;font-style:italic;color:var(--sepia);padding-top:.4rem}
+.rankinner .finale{margin-top:auto;padding-top:.6rem;padding-bottom:.3rem}
+
+.page.--right .sheet::before,.page.--simple .sheet::before{content:"";position:absolute;right:0;bottom:0;width:1.9rem;height:1.9rem;z-index:2;pointer-events:none;
+  background:linear-gradient(315deg,transparent 50%,rgba(60,30,5,.18) 50%,#f2e3c2 62%,#d9c193 100%);box-shadow:-.15rem -.15rem .3rem rgba(60,30,5,.18)}
+#measure .page{position:relative;width:360px;height:700px;margin:10px;display:block}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+.page.--left.--simple .sheet::before,.page.--left .sheet::before{left:0;right:auto;transform:scaleX(-1)}
+.page.--left .folio{left:2.6rem;right:1.6rem}
+
+/* ---- photo de fin, légendes ---- */
+p.legend{font-style:italic;color:#3d2a17}
+.fig.endfig{transform:rotate(-.8deg)}
+.fig img.zoom,.une-fig img.zoom{cursor:zoom-in}
+.mapinner>h2:first-child,.raceinner>h2:first-child,.rankinner>h2:first-child,.photoinner>h2:first-child{margin-top:0}
+
+/* ---- visionneuse ---- */
+#lb{position:fixed;inset:0;z-index:1000;background:rgba(18,10,4,.95);touch-action:none;overscroll-behavior:contain}
+#lb[hidden]{display:none}
+#lbstage{position:absolute;inset:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
+#lbimg{max-width:96vw;max-height:88vh;transform-origin:0 0;will-change:transform;user-select:none;-webkit-user-drag:none;
+  box-shadow:0 0 30px rgba(0,0,0,.6);touch-action:none}
+#lbclose{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:12px;width:44px;height:44px;border-radius:50%;
+  border:1px solid rgba(230,210,168,.6);background:rgba(43,29,16,.7);color:#f0e2bd;font-size:22px;line-height:42px;cursor:pointer}
+#lbhint{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));text-align:center;color:rgba(230,210,168,.75);
+  font:italic 14px/1.2 'NVT Serif',Georgia,serif;pointer-events:none;transition:opacity .6s}
+
+/* exergue : même taille que le texte, mise en valeur par le style seulement */
+blockquote.pull{margin:1.2rem .6rem .4rem;padding:.8rem .4rem .6rem;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);
+  text-align:center;font-style:italic;font-weight:700;font-size:var(--tx);line-height:1.3;color:var(--blood)}
+blockquote.pull span::before{content:"« "} blockquote.pull span::after{content:" »"}
+/* page photo de fin */
+.photoinner{display:flex;flex-direction:column;justify-content:center}
+.photoinner .fig{margin:.6rem auto .7rem}
+.photoinner p.legend{text-indent:0}
