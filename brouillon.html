@@ -32,7 +32,10 @@ h2{font-family:'NVT Gothique',Georgia,serif;font-weight:400;font-size:24px;margi
 #draft p{margin:0 0 10px;text-align:left;overflow-wrap:anywhere}
 #draft p.head{font-weight:700;margin-top:16px}
 .note{font-style:italic;color:#4a3420}
-#prompt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:17px;background:#fbf6ea;border:1px solid rgba(43,29,16,.45);
+.ref{margin:12px 0 6px}
+.ref img{display:block;max-width:100%;height:auto;border:1px solid rgba(43,29,16,.45);border-radius:4px}
+.ref figcaption{font-size:16px;font-style:italic;color:#4a3420;margin-top:4px}
+#prompt,.prompt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:17px;background:#fbf6ea;border:1px solid rgba(43,29,16,.45);
   border-radius:4px;padding:12px;-webkit-user-select:text;user-select:text}
 button{display:block;width:100%;margin-top:12px;min-height:50px;font:inherit;font-size:20px;font-weight:700;
   background:var(--blood);color:#f6e7c8;border:0;border-radius:8px;cursor:pointer}
@@ -52,11 +55,20 @@ button{display:block;width:100%;margin-top:12px;min-height:50px;font:inherit;fon
 <h2>Le texte</h2>
 <div id="headline" class="headline" hidden></div>
 <div id="draft"></div>
-<h2>Le dessin du jour</h2>
-<p class="note">Prompt à coller dans ChatGPT, puis dépose le dessin sur le PC.</p>
+<h2>Le dessin de la Une</h2>
+<p class="note">Prompt à coller dans ChatGPT, puis dépose le dessin sur le PC (…-dessin.png).</p>
 <div id="prompt"></div>
 <button id="copy" type="button">Copier le prompt</button>
 <div id="copied" class="msg" role="status" aria-live="polite" hidden></div>
+<figure id="ref-dessin" class="ref" hidden><figcaption>Enregistre cette image (appui long) et joins-la dans ChatGPT avec le prompt&nbsp;: c'est le dessin de la Une du dernier numéro.</figcaption></figure>
+<div id="bord" hidden>
+<h2>Le dessin de bord</h2>
+<p class="note">Prompt à coller dans ChatGPT, puis dépose le dessin sur le PC (…-bord.png).</p>
+<div id="prompt-bord" class="prompt"></div>
+<button id="copy-bord" type="button">Copier le prompt</button>
+<div id="copied-bord" class="msg" role="status" aria-live="polite" hidden></div>
+<figure id="ref-bord" class="ref" hidden><figcaption>Enregistre cette image (appui long) et joins-la dans ChatGPT avec le prompt&nbsp;: c'est le dessin de bord du dernier numéro.</figcaption></figure>
+</div>
 <p class="next">Pour publier&nbsp;: touche «&nbsp;Éditer&nbsp;» dans la notification&nbsp;; pour une autre version&nbsp;: «&nbsp;Nouveau jet&nbsp;».</p>
 </section>
 </main>
@@ -66,7 +78,7 @@ button{display:block;width:100%;margin-top:12px;min-height:50px;font:inherit;fon
   var JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
   var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   var $ = function (id) { return document.getElementById(id); };
-  var promptText = '';
+  var texts = {};
 
   function message(el, kind, title, text) {
     el.className = 'msg ' + kind;
@@ -105,32 +117,57 @@ button{display:block;width:100%;margin-top:12px;min-height:50px;font:inherit;fon
       n.textContent = 'Le texte complet du brouillon est dans les notifications ntfy.';
       box.appendChild(n);
     }
-    promptText = d.image_prompt || d.prompt || '';
-    $('prompt').textContent = promptText;
+    texts.prompt = d.image_prompt || d.prompt || '';
+    $('prompt').textContent = texts.prompt;
+    if (typeof d.bord === 'string' && d.bord.trim()) {
+      texts['prompt-bord'] = d.bord;
+      $('prompt-bord').textContent = d.bord;
+      $('bord').hidden = false;
+    }
+    if (d.refs && typeof d.refs === 'object') { reference('dessin', d.refs.dessin); reference('bord', d.refs.bord); }
     $('content').hidden = false;
   }
-  function selectPrompt() {
-    var r = document.createRange(); r.selectNodeContents($('prompt'));
+  // image de référence : chemin relatif au site, forme stricte, même origine seulement
+  var REF = /^\d{4}-\d{2}-\d{2}\/img\/(dessin|bord)\.jpg$/;
+  function reference(kind, path) {
+    if (typeof path !== 'string') return;
+    var m = REF.exec(path);
+    if (!m || m[1] !== kind) return;
+    var url;
+    try { url = new URL(path, location.href); } catch (e) { return; }
+    if (url.origin !== location.origin) return;
+    var fig = $('ref-' + kind), img = document.createElement('img');
+    img.alt = kind === 'dessin' ? 'Dessin de la Une du dernier numéro' : 'Dessin de bord du dernier numéro';
+    img.setAttribute('src', path);
+    fig.insertBefore(img, fig.firstChild);
+    if (kind === 'dessin' || !$('bord').hidden) fig.hidden = false;
+  }
+  function selectPrompt(id) {
+    var r = document.createRange(); r.selectNodeContents($(id));
     var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
   }
-  function fallback() { // repli : texte sélectionné, copie par l'ancienne commande si elle existe
-    selectPrompt();
-    var ok = false;
-    try { ok = document.execCommand && document.execCommand('copy'); } catch (e) { ok = false; }
-    if (ok) message($('copied'), 'ok', 'Prompt copié.', '');
-    else message($('copied'), 'err', 'Copie automatique impossible.', 'Le prompt est sélectionné : touche « Copier » dans le menu.');
+  function copier(id, done) {
+    function fallback() { // repli : texte sélectionné, copie par l'ancienne commande si elle existe
+      selectPrompt(id);
+      var ok = false;
+      try { ok = document.execCommand && document.execCommand('copy'); } catch (e) { ok = false; }
+      if (ok) message($(done), 'ok', 'Prompt copié.', '');
+      else message($(done), 'err', 'Copie automatique impossible.', 'Le prompt est sélectionné : touche « Copier » dans le menu.');
+    }
+    return function () {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(texts[id] || '').then(function () {
+            message($(done), 'ok', 'Prompt copié.', 'Colle-le dans ChatGPT.');
+          }, fallback);
+          return;
+        }
+      } catch (e) { /* repli ci-dessous */ }
+      fallback();
+    };
   }
-  $('copy').addEventListener('click', function () {
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(promptText).then(function () {
-          message($('copied'), 'ok', 'Prompt copié.', 'Colle-le dans ChatGPT.');
-        }, fallback);
-        return;
-      }
-    } catch (e) { /* repli ci-dessous */ }
-    fallback();
-  });
+  $('copy').addEventListener('click', copier('prompt', 'copied'));
+  $('copy-bord').addEventListener('click', copier('prompt-bord', 'copied-bord'));
   var bad = function () { message($('msg'), 'err', 'Lien abîmé ou incomplet : brouillon illisible.', 'Rouvre la notification du brouillon ; le texte est aussi sur le PC.'); window.__brouillon = { ready: false }; };
   var frag = location.hash.replace(/^#/, '');
   if (!frag) { message($('msg'), 'err', 'Lien incomplet : aucun brouillon dans ce lien.', 'Rouvre la notification du brouillon ; le texte est aussi sur le PC.'); return; }
