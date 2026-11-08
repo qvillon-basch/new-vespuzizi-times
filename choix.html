@@ -31,6 +31,8 @@ h2{font-family:'NVT Gothique',Georgia,serif;font-weight:400;font-size:24px;margi
 .imposed li::before{content:"✦";position:absolute;left:4px;color:var(--blood);font-style:normal}
 label.prop{display:flex;gap:12px;align-items:flex-start;padding:12px 6px;border-bottom:1px dotted rgba(43,29,16,.45);cursor:pointer}
 label.prop input{flex:none;width:26px;height:26px;margin-top:2px;accent-color:var(--blood)}
+.idea textarea{width:100%;font:inherit;font-size:17px;padding:10px;border:1px solid rgba(43,29,16,.5);border-radius:4px;background:#fbf6ea;color:var(--ink);min-height:72px;resize:vertical}
+.idea label.mine{display:block;font-weight:700;margin:10px 0 4px}
 label.prop b{display:block;font-size:19px}
 label.prop span{display:block;font-style:italic;color:#4a3420;font-size:17px}
 .own label{display:block;font-weight:700;margin:10px 0 4px}
@@ -57,6 +59,19 @@ button[disabled]{opacity:.5}
 <h2>Les propositions</h2>
 <div id="props"></div>
 <div class="hint">Aucune case cochée&nbsp;: seules les rubriques d'office.</div>
+<div id="dessins" hidden>
+<div id="part-une" class="idea" hidden>
+<h2>Le dessin de la Une</h2>
+<div id="une"></div>
+<label class="mine" for="uneOwn">Mon idée</label><textarea id="uneOwn" maxlength="600"></textarea>
+</div>
+<div id="part-bord" class="idea" hidden>
+<h2>Le dessin de bord</h2>
+<div id="bord"></div>
+<label class="mine" for="bordOwn">Mon idée</label><textarea id="bordOwn" maxlength="600"></textarea>
+</div>
+<div class="hint">Une idée par dessin&nbsp;; «&nbsp;Mon idée&nbsp;» remplace l'idée cochée&nbsp;; sans idée cochée, la n°1.</div>
+</div>
 <h2>Ma rubrique</h2>
 <div class="own">
 <label for="ownTitle">Titre</label><input id="ownTitle" type="text" maxlength="60" autocomplete="off">
@@ -70,6 +85,8 @@ button[disabled]{opacity:.5}
 (function () {
   'use strict';
   var MAX_PROPOSALS = 6; // = inbox.MAX_PROPOSALS (vérifié par les tests)
+  var MAX_IDEAS = 3; // = inbox.MAX_IDEAS (idées de dessin, lot G)
+  var MAX_BODY_BYTES = 3900; // corps REDIGER, sous 4 000 octets (message ntfy ≤ 4 096)
   var PLAN_B ='Plan B : coche les rubriques dans rubriques.md sur le PC puis appuie sur Rédiger dans la notification.';
   var JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
   var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
@@ -124,17 +141,53 @@ button[disabled]{opacity:.5}
       if (p.hook) { var h = document.createElement('span'); h.textContent = String(p.hook); t.appendChild(h); }
       l.appendChild(c); l.appendChild(t); $('props').appendChild(l);
     });
+    ['une', 'bord'].forEach(function (kind) { // idées de dessin (lot G) : boutons radio
+      var list = ideas(d[kind]);
+      if (!list.length) return;
+      list.forEach(function (p) {
+        var l = document.createElement('label'); l.className = 'prop';
+        var c = document.createElement('input'); c.type = 'radio'; c.name = kind; c.value = String(p.n);
+        var t = document.createElement('div');
+        var b = document.createElement('b'); b.textContent = p.n + '. ' + p.title; t.appendChild(b);
+        if (typeof p.scene === 'string' && p.scene) { var h = document.createElement('span'); h.textContent = p.scene; t.appendChild(h); }
+        l.appendChild(c); l.appendChild(t); $(kind).appendChild(l);
+      });
+      $('part-' + kind).hidden = false;
+      $('dessins').hidden = false;
+    });
     $('form').hidden = false;
+  }
+  function ideas(list) { // idées mal formées : ignorées (le choix part sans elles, idée n°1)
+    if (!Array.isArray(list) || list.length > MAX_IDEAS) return [];
+    var seen = {};
+    var ok = list.every(function (p) {
+      if (!p || typeof p.title !== 'string' || !Number.isInteger(p.n) || p.n < 1 || p.n > MAX_IDEAS || seen[p.n]) return false;
+      seen[p.n] = true;
+      return true;
+    });
+    return ok ? list : [];
+  }
+  function picked(kind) {
+    var c = document.querySelector('#' + kind + ' input:checked');
+    return c ? c.value : '';
   }
   // REDIGER <nonce> <numéros> | <titre>\n<consigne> : après le « | » (toujours présent), le titre
   // sur la première ligne, la consigne sur les suivantes (`editor.parse_own`). Titre vide : une
   // première ligne vide puis la consigne (« \n<consigne> » : titre au choix du rédacteur).
+  // Lot G : jetons U<k> / B<k> (idée de dessin cochée) ; U0 / B0 : « Mon idée », et alors la
+  // suite du « | » est un objet JSON {"rubrique", "une", "bord"} (`inbox.parse_button`).
   function body() {
     var nums = Array.prototype.map.call(document.querySelectorAll('#props input:checked'), function (c) { return c.value; });
     var title = $('ownTitle').value.replace(/\s+/g, ' ').trim();
     var text = $('ownText').value.replace(/\r\n?/g, '\n').trim();
     var own = title ? (text ? title + '\n' + text : title) : (text ? '\n' + text : '');
-    return 'REDIGER ' + data.nonce + (nums.length ? ' ' + nums.join(' ') : '') + ' | ' + own;
+    var mine = { une: $('part-une').hidden ? '' : $('uneOwn').value.replace(/\s+/g, ' ').trim(),
+                 bord: $('part-bord').hidden ? '' : $('bordOwn').value.replace(/\s+/g, ' ').trim() };
+    var u = mine.une ? '0' : picked('une'), b = mine.bord ? '0' : picked('bord');
+    if (u) nums.push('U' + u);
+    if (b) nums.push('B' + b);
+    var tail = (u === '0' || b === '0') ? JSON.stringify({ rubrique: own, une: mine.une, bord: mine.bord }) : own;
+    return 'REDIGER ' + data.nonce + (nums.length ? ' ' + nums.join(' ') : '') + ' | ' + tail;
   }
   function lock(on) {
     Array.prototype.forEach.call(document.querySelectorAll('#form input, #form textarea, #go'), function (e) { e.disabled = on; });
@@ -143,6 +196,11 @@ button[disabled]{opacity:.5}
     ev.preventDefault();
     if (!data) return;
     var payload = body();
+    // corps borné en octets (UTF-8) : sous la limite des messages ntfy (4 096 octets)
+    if (new TextEncoder().encode(payload).length > MAX_BODY_BYTES) {
+      message('err', 'Texte trop long pour partir.', 'Raccourcis ta rubrique ou tes idées, puis réessaie.');
+      return;
+    }
     lock(true);
     $('go').textContent = 'Envoi…';
     var ctrl = window.AbortController ? new AbortController() : null;
@@ -153,7 +211,7 @@ button[disabled]{opacity:.5}
         clearTimeout(timer);
         if (!r.ok) throw new Error('HTTP ' + r.status);
         $('go').textContent = 'Envoyé';
-        message('ok', 'Choix envoyé.', 'Amerigo prend la plume : le brouillon arrivera dans une notification.');
+        message('ok', 'Choix envoyé.', 'Les prompts des deux dessins arrivent d\'abord, puis le brouillon, chacun dans une notification.');
       })
       .catch(function (e) {
         clearTimeout(timer);

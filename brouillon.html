@@ -7,7 +7,8 @@
 <title>The New Vespuzizi Times — le brouillon du soir</title>
 <!-- Page de service générique : aucun contenu du jour ici. Le contenu voyage dans le fragment
      du lien (#…, jamais transmis au serveur) : JSON UTF-8 → DEFLATE brut → base64url sans « = ».
-     Aucune action de publication : « Éditer » et « Nouveau jet » sont des boutons de la notification.
+     Aucune action de publication : la gazette part quand les deux dessins sont déposés (lot G) ;
+     « Nouveau jet » est un bouton de la notification.
      Polices : NVT Gothique (Pirata One) et NVT Serif (STIX General), SIL Open Font License 1.1. -->
 <style>
 @font-face{font-family:'NVT Gothique';src:url('assets/fonts/nvt-gothique.woff') format('woff');font-display:swap}
@@ -56,20 +57,20 @@ button{display:block;width:100%;margin-top:12px;min-height:50px;font:inherit;fon
 <div id="headline" class="headline" hidden></div>
 <div id="draft"></div>
 <h2>Le dessin de la Une</h2>
-<p class="note">Prompt à coller dans ChatGPT, puis dépose le dessin sur le PC (…-dessin.png).</p>
+<p class="note">Prompt à coller dans ChatGPT, puis envoie le dessin dans la conversation des images.</p>
 <div id="prompt"></div>
 <button id="copy" type="button">Copier le prompt</button>
 <div id="copied" class="msg" role="status" aria-live="polite" hidden></div>
 <figure id="ref-dessin" class="ref" hidden><figcaption>Enregistre cette image (appui long) et joins-la dans ChatGPT avec le prompt&nbsp;: c'est le dessin de la Une du dernier numéro.</figcaption></figure>
 <div id="bord" hidden>
 <h2>Le dessin de bord</h2>
-<p class="note">Prompt à coller dans ChatGPT, puis dépose le dessin sur le PC (…-bord.png).</p>
+<p class="note">Prompt à coller dans ChatGPT, puis envoie le dessin dans la conversation des images.</p>
 <div id="prompt-bord" class="prompt"></div>
 <button id="copy-bord" type="button">Copier le prompt</button>
 <div id="copied-bord" class="msg" role="status" aria-live="polite" hidden></div>
 <figure id="ref-bord" class="ref" hidden><figcaption>Enregistre cette image (appui long) et joins-la dans ChatGPT avec le prompt&nbsp;: c'est le dessin de bord du dernier numéro.</figcaption></figure>
 </div>
-<p class="next">Pour publier&nbsp;: touche «&nbsp;Éditer&nbsp;» dans la notification&nbsp;; pour une autre version&nbsp;: «&nbsp;Nouveau jet&nbsp;».</p>
+<p class="next">La gazette part dès que les deux dessins sont déposés dans la conversation des images&nbsp;; pour une autre version du texte&nbsp;: «&nbsp;Nouveau jet&nbsp;» dans la notification du brouillon.</p>
 </section>
 </main>
 <script>
