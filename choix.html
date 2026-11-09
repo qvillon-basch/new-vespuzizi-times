@@ -38,6 +38,8 @@ label.prop span{display:block;font-style:italic;color:#4a3420;font-size:17px}
 .own label{display:block;font-weight:700;margin:10px 0 4px}
 .own input,.own textarea{width:100%;font:inherit;font-size:17px;padding:10px;border:1px solid rgba(43,29,16,.5);border-radius:4px;background:#fbf6ea;color:var(--ink)}
 .own textarea{min-height:96px;resize:vertical}
+.chap{margin-top:8px}
+.chap .own label{margin-top:6px}
 .hint{font-size:15px;font-style:italic;color:var(--sepia);margin-top:4px}
 button{display:block;width:100%;margin-top:22px;min-height:52px;font:inherit;font-size:21px;font-weight:700;
   background:var(--blood);color:#f6e7c8;border:0;border-radius:8px;cursor:pointer}
@@ -50,15 +52,20 @@ button[disabled]{opacity:.5}
 </style></head>
 <body><main class="sheet">
 <div class="mast">The New<b>Vespuzizi Times</b></div><hr><hr>
-<h1>Les rubriques du soir</h1>
+<h1 id="h1">Les rubriques du soir</h1>
 <div class="when" id="when"></div>
 <div id="msg" class="msg" role="status" aria-live="polite" hidden></div>
 <form id="form" hidden>
+<div id="imposed-part">
 <h2>Au sommaire d'office</h2>
 <ul class="imposed" id="imposed"></ul>
+</div>
+<div id="props-part">
 <h2>Les propositions</h2>
 <div id="props"></div>
 <div class="hint">Aucune case cochée&nbsp;: seules les rubriques d'office.</div>
+</div>
+<div id="chapitres" hidden></div>
 <div id="dessins" hidden>
 <div id="part-une" class="idea" hidden>
 <h2>Le dessin de la Une</h2>
@@ -72,11 +79,13 @@ button[disabled]{opacity:.5}
 </div>
 <div class="hint">Une idée par dessin&nbsp;; «&nbsp;Mon idée&nbsp;» remplace l'idée cochée&nbsp;; sans idée cochée, la n°1.</div>
 </div>
+<div id="own-part">
 <h2>Ma rubrique</h2>
 <div class="own">
 <label for="ownTitle">Titre</label><input id="ownTitle" type="text" maxlength="60" autocomplete="off">
 <label for="ownText">Consigne</label><textarea id="ownText" maxlength="600"></textarea>
 <div class="hint">Facultatif&nbsp;: laisse vide si tu n'as pas d'idée ce soir.</div>
+</div>
 </div>
 <button id="go" type="submit">Rédiger</button>
 </form>
@@ -128,8 +137,68 @@ button[disabled]{opacity:.5}
   function canInflate() { // DecompressionStream('deflate-raw') absent ou refusé : navigateur trop ancien
     try { new DecompressionStream('deflate-raw'); return true; } catch (e) { return false; }
   }
+  // lot C : numéro « interview », un chapitre par rubrique (titre au bouton radio, case
+  // « garder », champ « mon titre ») ; chapitres mal formés : page habituelle
+  var MAX_CHAPTERS = 20, MAX_TITLES = 3, OWN_TITLE_MAX = 60;
+  function chapters(list) {
+    if (!Array.isArray(list) || !list.length || list.length > MAX_CHAPTERS) return [];
+    var seen = {};
+    var ok = list.every(function (c) {
+      if (!c || !Number.isInteger(c.n) || c.n < 1 || c.n > MAX_CHAPTERS || seen[c.n]) return false;
+      if (typeof c.theme !== 'string' || !Array.isArray(c.titles) || !c.titles.length || c.titles.length > MAX_TITLES) return false;
+      seen[c.n] = true;
+      return c.titles.every(function (t) { return typeof t === 'string' && t; });
+    });
+    return ok ? list : [];
+  }
+  function renderInterview(d, list) {
+    data.interview = true;
+    $('h1').textContent = 'Les chapitres de l’interview';
+    ['imposed-part', 'props-part', 'dessins', 'own-part'].forEach(function (id) { $(id).hidden = true; });
+    list.forEach(function (c) {
+      var box = document.createElement('div'); box.className = 'chap'; box.setAttribute('data-n', String(c.n));
+      var h = document.createElement('h2'); h.textContent = c.theme; box.appendChild(h);
+      if (typeof c.hook === 'string' && c.hook) { var k = document.createElement('div'); k.className = 'hint'; k.textContent = c.hook; box.appendChild(k); }
+      var keep = document.createElement('label'); keep.className = 'prop';
+      var kc = document.createElement('input'); kc.type = 'checkbox'; kc.className = 'keep'; kc.checked = true;
+      var kt = document.createElement('b'); kt.textContent = 'Garder ce chapitre';
+      keep.appendChild(kc); keep.appendChild(kt); box.appendChild(keep);
+      c.titles.forEach(function (t, i) {
+        var l = document.createElement('label'); l.className = 'prop';
+        var r = document.createElement('input'); r.type = 'radio'; r.name = 'chap' + c.n; r.value = String(i + 1);
+        if (i === 0) r.checked = true;
+        var b = document.createElement('b'); b.textContent = t;
+        l.appendChild(r); l.appendChild(b); box.appendChild(l);
+      });
+      var own = document.createElement('div'); own.className = 'own';
+      var ol = document.createElement('label'); ol.textContent = 'Mon titre';
+      var oi = document.createElement('input'); oi.type = 'text'; oi.className = 'mine'; oi.maxLength = OWN_TITLE_MAX; oi.autocomplete = 'off';
+      own.appendChild(ol); own.appendChild(oi); box.appendChild(own);
+      $('chapitres').appendChild(box);
+    });
+    var hint = document.createElement('div'); hint.className = 'hint';
+    hint.textContent = '« Mon titre » remplace le titre coché ; un chapitre décoché n’est pas publié.';
+    $('chapitres').appendChild(hint);
+    $('chapitres').hidden = false;
+    $('form').hidden = false;
+  }
+  // REDIGER <nonce> | {"chapitres": [{"n", "t"}, {"n", "t": 0, "titre"}]} (`interview_editor.parse_choice`)
+  function interviewBody() {
+    var out = [];
+    Array.prototype.forEach.call(document.querySelectorAll('#chapitres .chap'), function (box) {
+      if (!box.querySelector('input.keep').checked) return;
+      var n = parseInt(box.getAttribute('data-n'), 10);
+      var mine = box.querySelector('input.mine').value.replace(/\s+/g, ' ').trim();
+      if (mine) { out.push({ n: n, t: 0, titre: mine }); return; }
+      var r = box.querySelector('input[type=radio]:checked');
+      out.push({ n: n, t: r ? parseInt(r.value, 10) : 1 });
+    });
+    return out.length ? 'REDIGER ' + data.nonce + ' | ' + JSON.stringify({ chapitres: out }) : null;
+  }
   function render(d) {
     $('when').textContent = 'Numéro du ' + dateFr(d.edition);
+    var chaps = chapters(d.chapitres);
+    if (chaps.length) { renderInterview(d, chaps); return; }
     var imp = Array.isArray(d.imposed) && d.imposed.length ? d.imposed : ['La Flotte', 'Le Journal de bord du capitaine'];
     imp.forEach(function (t) { var li = document.createElement('li'); li.textContent = String(t); $('imposed').appendChild(li); });
     d.proposals.forEach(function (p) {
@@ -195,7 +264,11 @@ button[disabled]{opacity:.5}
   function send(ev) {
     ev.preventDefault();
     if (!data) return;
-    var payload = body();
+    var payload = data.interview ? interviewBody() : body();
+    if (payload === null) {
+      message('err', 'Aucun chapitre gardé.', 'Garde au moins un chapitre, puis réessaie.');
+      return;
+    }
     // corps borné en octets (UTF-8) : sous la limite des messages ntfy (4 096 octets)
     if (new TextEncoder().encode(payload).length > MAX_BODY_BYTES) {
       message('err', 'Texte trop long pour partir.', 'Raccourcis ta rubrique ou tes idées, puis réessaie.');
@@ -211,7 +284,9 @@ button[disabled]{opacity:.5}
         clearTimeout(timer);
         if (!r.ok) throw new Error('HTTP ' + r.status);
         $('go').textContent = 'Envoyé';
-        message('ok', 'Choix envoyé.', 'Les prompts des deux dessins arrivent d\'abord, puis le brouillon, chacun dans une notification.');
+        message('ok', 'Choix envoyé.', data.interview
+          ? 'Les prompts des dessins manquants arrivent d\'abord, puis le brouillon.'
+          : 'Les prompts des deux dessins arrivent d\'abord, puis le brouillon, chacun dans une notification.');
       })
       .catch(function (e) {
         clearTimeout(timer);

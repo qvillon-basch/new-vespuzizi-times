@@ -56,12 +56,15 @@ button{display:block;width:100%;margin-top:12px;min-height:50px;font:inherit;fon
 <h2>Le texte</h2>
 <div id="headline" class="headline" hidden></div>
 <div id="draft"></div>
+<div id="une-part">
 <h2>Le dessin de la Une</h2>
 <p class="note">Prompt à coller dans ChatGPT, puis envoie le dessin dans la conversation des images.</p>
 <div id="prompt"></div>
 <button id="copy" type="button">Copier le prompt</button>
 <div id="copied" class="msg" role="status" aria-live="polite" hidden></div>
 <figure id="ref-dessin" class="ref" hidden><figcaption>Enregistre cette image (appui long) et joins-la dans ChatGPT avec le prompt&nbsp;: c'est le dessin de la Une du dernier numéro.</figcaption></figure>
+</div>
+<div id="chap-prompts" hidden></div>
 <div id="bord" hidden>
 <h2>Le dessin de bord</h2>
 <p class="note">Prompt à coller dans ChatGPT, puis envoie le dessin dans la conversation des images.</p>
@@ -126,7 +129,29 @@ button{display:block;width:100%;margin-top:12px;min-height:50px;font:inherit;fon
       $('bord').hidden = false;
     }
     if (d.refs && typeof d.refs === 'object') { reference('dessin', d.refs.dessin); reference('bord', d.refs.bord); }
+    chapterPrompts(d.chaps);
     $('content').hidden = false;
+  }
+  // lot C : numéro « interview », un prompt par dessin de chapitre (chaps : [{n, t, p}])
+  function chapterPrompts(list) {
+    if (!Array.isArray(list) || !list.length) return;
+    var ok = list.filter(function (c) { return c && Number.isInteger(c.n) && typeof c.p === 'string' && c.p.trim(); });
+    if (!ok.length) return;
+    $('une-part').hidden = true; $('bord').hidden = true;
+    var host = $('chap-prompts');
+    ok.forEach(function (c) {
+      var id = 'prompt-chap-' + c.n;
+      var h = document.createElement('h2'); h.textContent = 'Dessin du chapitre ' + c.n + (typeof c.t === 'string' && c.t ? ' : ' + c.t : '');
+      var note = document.createElement('p'); note.className = 'note';
+      note.textContent = 'Prompt à coller dans ChatGPT, puis envoie le dessin (chap-' + c.n + ') dans la conversation des images.';
+      var p = document.createElement('div'); p.className = 'prompt'; p.id = id; p.textContent = c.p;
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = 'Copier le prompt';
+      var m = document.createElement('div'); m.className = 'msg'; m.id = id + '-ok'; m.hidden = true;
+      texts[id] = c.p;
+      [h, note, p, b, m].forEach(function (x) { host.appendChild(x); });
+      b.addEventListener('click', copier(id, id + '-ok'));
+    });
+    host.hidden = false;
   }
   // image de référence : chemin relatif au site, forme stricte, même origine seulement
   var REF = /^\d{4}-\d{2}-\d{2}\/img\/(dessin|bord)\.jpg$/;
