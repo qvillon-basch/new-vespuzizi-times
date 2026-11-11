@@ -1,0 +1,19 @@
+{
+  "name": "page-flip",
+  "version": "2.0.7",
+  "license": "MIT",
+  "homepage": "https://nodlik.github.io/StPageFlip/",
+  "tarball": "https://registry.npmjs.org/page-flip/-/page-flip-2.0.7.tgz",
+  "integrity": "sha512-96lQFUUz7r/LZzEUZJ3yBIMEKU9+m8HMFDzTvTdD6P7Ag/wXINjp9n0W7b4wanwnDbQETo4uNUoL3zMqpFxwGA==",
+  "files": {
+    "page-flip.browser.js": {
+      "from": "package/dist/js/page-flip.browser.js",
+      "sha512": "sha512-0iLB9A0MyxVn/P5zwtbjY01oqXhGHemasoo+CTH77HLt1RFTcmwvf7vtF+D0YT63ET5LagV/4Ajw40lkawm/7Q=="
+    },
+    "page-flip-LICENSE.txt": {
+      "from": "package/LICENSE",
+      "sha512": "sha512-npXohO/+BahHZYH2L+bsXSiQ4gExgbi4V1zotftqauFVXjuAmme0N2iIiT5hhppry80AjeZ/JCHbiImwnZTwyQ=="
+    }
+  },
+  "note": "Fichiers extraits du tarball npm dont l'empreinte « integrity » a été vérifiée (05/11/2026)."
+}
